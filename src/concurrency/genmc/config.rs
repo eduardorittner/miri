@@ -100,6 +100,8 @@ impl GenmcConfig {
             return Err("native-lib not supported in GenMC mode.");
         } else if miri_config.isolated_op != IsolatedOp::Reject(RejectOpWith::Abort) {
             return Err("Cannot disable isolation in GenMC mode");
+        } else if miri_config.spurious_wakeup_rate != 0.0 {
+            return Err("Spurious wakeups not supported in GenMC mode");
         }
 
         // Adjust settings where needed.

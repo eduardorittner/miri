@@ -935,6 +935,8 @@ pub trait EvalContextExt<'tcx>: crate::MiriInterpCxExt<'tcx> {
                             this.write_null(&dest),
                         UnblockKind::TimedOut =>
                             this.set_errno_and_return_neg1(LibcError("ETIMEDOUT"), &dest),
+                        UnblockKind::Spurious =>
+                            unreachable!("semaphore waiters never receive spurious wakeups"),
                     }
                 }
             ),

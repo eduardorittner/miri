@@ -582,6 +582,9 @@ pub trait EvalContextExt<'tcx>: crate::MiriInterpCxExt<'tcx> {
                             // Now get back the lock.
                             this.condvar_reacquire_mutex(mutex_ref, retval_timeout, dest)
                         }
+                        UnblockKind::Spurious => {
+                            unreachable!("condvar waiters never receive spurious wakeups")
+                        }
                     }
                 }
             ),
@@ -637,8 +640,9 @@ pub trait EvalContextExt<'tcx>: crate::MiriInterpCxExt<'tcx> {
                             // Acquire the clock of the futex.
                             this.acquire_clock(&futex.clock)?;
                         },
-                        UnblockKind::TimedOut => {
-                            // Remove the waiter from the futex.
+                        UnblockKind::TimedOut | UnblockKind::Spurious => {
+                            // We were not woken by a `FUTEX_WAKE`, so there is no clock to
+                            // acquire. Remove the waiter from the futex.
                             let thread = this.active_thread();
                             let mut futex = futex_ref.0.borrow_mut();
                             futex.waiters.retain(|waiter| waiter.thread != thread);
@@ -729,6 +733,8 @@ pub trait EvalContextExt<'tcx>: crate::MiriInterpCxExt<'tcx> {
                             // (But it's too much of a hassle to assert that.)
                             this.semaphore_decrement(semaphore_ref, deadline, callback)
                         }
+                        UnblockKind::Spurious =>
+                            unreachable!("semaphore waiters never receive spurious wakeups"),
                     }
                 }
             ),
